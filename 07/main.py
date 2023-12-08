@@ -1,6 +1,7 @@
 import sys
 import pprint
 import functools
+from collections import OrderedDict
 
 CARD_SCORES = {'2': 0, '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, 'T': 8, 'J': 9, 'Q': 10, 'K': 11, 'A': 12}
 
@@ -40,66 +41,32 @@ def add_hand_types(data, is_joker = False):
             if not character in occurences:
                 occurences[character] = 0
             occurences[character] += 1
-        num_pairs = 0
-        num_three = 0
-        num_four = 0
-        num_five = 0
+        num_groups = OrderedDict([(5, 0), (4, 0), (3, 0), (2, 0)])
         for k, count in occurences.items():
             if is_joker and k == 'J':
                 continue
-            if count == 2:
-                num_pairs += 1
-            if count == 3:
-                num_three += 1
-            if count == 4:
-                num_four += 1
-            if count == 5:
-                num_five += 1
-        if is_joker and num_four == 1 and occurences['J'] == 1:
-            num_five = 1
-        if is_joker and num_three == 1:
-            if occurences['J'] == 2:
-                num_five = 1
-            if occurences['J'] == 1:
-                num_four = 1
-        if is_joker and num_pairs > 0:
-            if occurences['J'] == 3:
-                num_five = 1
-            if occurences['J'] == 2:
-                num_four = 1
-            if occurences['J'] == 1:
-                num_three = 1
-                num_pairs -= 1
-        if is_joker and num_pairs == 0 and num_three == 0 and num_four == 0 and num_five == 0:
-            if occurences['J'] == 1:
-                num_pairs = 1
-            if occurences['J'] == 2:
-                num_three = 1
-            if occurences['J'] == 3:
-                num_four = 1
-            if occurences['J'] == 4:
-                num_five = 1
-            if occurences['J'] == 5:
-                num_five = 1
-        if num_five > 0:
-            item['type'] = {'score': 6, 'verbose': 'five_of_a_kind'}
-            continue
-        if num_four > 0:
-            item['type'] = {'score': 5, 'verbose': 'four_of_a_kind'}
-            continue
-        if num_three > 0 and num_pairs > 0:
-            item['type'] = {'score': 4, 'verbose': 'full_house'}
-            continue
-        if num_three > 0 and num_pairs == 0:
-            item['type'] = {'score': 3, 'verbose': 'three_of_a_kind'}
-            continue
-        if num_pairs == 2:
-            item['type'] = {'score': 2, 'verbose': 'two_pair'}
-            continue
-        if num_pairs == 1:
-            item['type'] = {'score': 1, 'verbose': 'one_pair'}
-            continue
-        item['type'] = {'score': 0, 'verbose': 'high_card'}
+            if count in num_groups:
+                num_groups[count] += 1
+        
+        if is_joker:
+            all_zero = True
+            for num in num_groups:
+                if occurences['J'] > 0 and num_groups[num] > 0:
+                    num_groups[num + occurences['J']] += 1
+                    num_groups[num] -= 1
+                    all_zero = False
+            if all_zero:
+                num_groups[min(occurences['J'] + 1, 5)] = 1
+
+        item['type'] = {
+            (0, 0, 0, 1): {'score': 6, 'verbose': 'five_of_a_kind'},
+            (0, 0, 1, 0): {'score': 5, 'verbose': 'four_of_a_kind'},
+            (1, 1, 0, 0): {'score': 4, 'verbose': 'full_house'},
+            (0, 1, 0, 0): {'score': 3, 'verbose': 'three_of_a_kind'},
+            (2, 0, 0, 0): {'score': 2, 'verbose': 'two_pair'},
+            (1, 0, 0, 0): {'score': 1, 'verbose': 'one_pair'},
+            (0, 0, 0, 0): {'score': 0, 'verbose': 'high_card'}
+        }[(num_groups[2], num_groups[3], num_groups[4], num_groups[5])]
 
     return data
 
