@@ -44,7 +44,7 @@ def sum_manhattan_axis(arr, propagated_total_distance_from_border = 0, num_propa
                                          num_propagated_galaxies + arr[0, 1])
 
 
-def dilate_space(galaxies_per_axis, propagated_dilation = 0, dilation_factor = 3):
+def dilate_space(galaxies_per_axis, propagated_dilation = 0, dilation_factor = 2):
     previous_position = galaxies_per_axis[0, 0]
     galaxies_per_axis[0, 0] += propagated_dilation
     if len(galaxies_per_axis) == 1:
